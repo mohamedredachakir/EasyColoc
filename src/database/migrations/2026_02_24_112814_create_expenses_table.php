@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('colocation_id')->constrained('colocations')->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
+            $table->foreignId('payer_id')->constrained('users')->cascadeOnDelete();
+            $table->string('title');
+            $table->decimal('amount', 10, 2);
+            $table->date('expense_date');
             $table->timestamps();
         });
     }
