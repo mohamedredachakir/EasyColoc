@@ -1,0 +1,456 @@
+PRD – EasyColoc
+
+Application Web de Gestion de Colocation
+
+1️⃣ Présentation Générale
+1.1 Nom du Projet
+
+EasyColoc
+
+1.2 Description
+
+EasyColoc est une application web permettant aux membres d’une colocation de :
+
+Suivre les dépenses communes
+
+Calculer automatiquement les soldes individuels
+
+Visualiser clairement « qui doit quoi à qui »
+
+Simplifier les remboursements
+
+L’objectif principal est d’éliminer les calculs manuels et les conflits financiers entre colocataires.
+
+2️⃣ Contexte du Projet
+
+Projet pédagogique réalisé en 5 jours dans le cadre de la formation Développeur Web et Web Mobile (2023).
+
+Durée : 23/02/2026 → 27/02/2026
+Travail : Individuel
+Stack imposée : Laravel MVC + MySQL/PostgreSQL
+
+3️⃣ Objectifs
+3.1 Objectifs Fonctionnels
+
+Créer et gérer des colocations
+
+Inviter des membres via email/token
+
+Ajouter et gérer des dépenses partagées
+
+Calculer automatiquement les dettes
+
+Afficher une vue simplifiée des remboursements
+
+Gérer les paiements
+
+Implémenter un système de réputation
+
+Administration globale (statistiques + bannissement)
+
+3.2 Objectifs Techniques
+Élément	Choix
+Architecture	MVC Monolithique Laravel
+Backend	PHP 8+
+Base de données	MySQL ou PostgreSQL
+ORM	Eloquent
+Authentification	Laravel Breeze / Jetstream
+Frontend	Blade + Tailwind CSS
+Sécurité	CSRF, XSS Protection, Validation
+Versionning	Git / GitHub
+Modélisation	UML
+4️⃣ Rôles & Acteurs
+👤 Member
+
+Rejoint une colocation
+
+Ajoute des dépenses
+
+Marque des paiements
+
+Peut quitter (sauf owner)
+
+👑 Owner
+
+Créateur de la colocation
+
+Invite des membres
+
+Gère catégories
+
+Retire membres
+
+Peut annuler la colocation
+
+🛡 Global Admin
+
+Accès dashboard global
+
+Statistiques générales
+
+Bannir / Débannir utilisateurs
+
+Peut être aussi Owner ou Member
+
+5️⃣ Fonctionnalités Détaillées
+5.1 Authentification
+
+Inscription
+
+Connexion
+
+Déconnexion
+
+Gestion profil
+
+Premier inscrit → promu automatiquement Global Admin
+
+Blocage automatique si utilisateur banni
+
+5.2 Gestion Colocations
+
+Création (Owner automatique)
+
+Modification
+
+Annulation (status = cancelled)
+
+Départ d’un membre (left_at)
+
+Une seule colocation active par utilisateur
+
+Invitation par token unique
+
+5.3 Invitations
+
+Token unique généré
+
+Envoi email
+
+Acceptation / Refus
+
+Vérification email correspondant
+
+Blocage si utilisateur déjà dans une colocation active
+
+5.4 Dépenses
+
+Attributs :
+
+titre
+
+montant
+
+date
+
+catégorie
+
+payeur
+
+Fonctions :
+
+Ajouter
+
+Supprimer
+
+Historique
+
+Filtrage par mois
+
+Statistiques mensuelles
+
+Statistiques par catégorie
+
+5.5 Calcul des Soldes
+
+Pour chaque membre :
+
+Solde = Total payé - Part individuelle
+
+Système de simplification des dettes :
+Affichage clair :
+
+A doit 200 MAD à B
+
+5.6 Paiements
+
+Bouton « Marquer payé »
+
+Réduction automatique des dettes
+
+Historique des paiements
+
+5.7 Réputation
+
+Règles :
+
+Situation	Effet
+Quitte sans dette	+1
+Quitte avec dette	-1
+Annulation sans dette	+1
+Annulation avec dette	-1
+Owner retire membre endetté	Dette imputée à l’Owner
+5.8 Dashboard Admin
+
+Nombre utilisateurs
+
+Nombre colocations
+
+Total dépenses
+
+Utilisateurs bannis
+
+Bannir / Débannir
+
+6️⃣ Règles Métier Importantes
+
+Un utilisateur ne peut avoir qu’une seule colocation active
+
+Impossible d’accepter invitation si déjà membre actif
+
+Si Owner quitte → doit annuler colocation
+
+Si membre retiré avec dette → ajustement interne
+
+Utilisateur banni → accès bloqué
+
+7️⃣ Modélisation Base de Données
+Tables principales
+users
+
+id
+
+name
+
+email
+
+password
+
+reputation
+
+is_global_admin
+
+is_banned
+
+timestamps
+
+colocations
+
+id
+
+name
+
+status (active/cancelled)
+
+owner_id
+
+timestamps
+
+Relation :
+
+owner_id → users.id
+
+colocation_user (pivot)
+
+id
+
+user_id
+
+colocation_id
+
+role (owner/member)
+
+joined_at
+
+left_at
+
+invitations
+
+id
+
+colocation_id
+
+email
+
+token
+
+status (pending/accepted/refused)
+
+expires_at
+
+timestamps
+
+categories
+
+id
+
+colocation_id
+
+name
+
+timestamps
+
+expenses
+
+id
+
+colocation_id
+
+payer_id
+
+category_id
+
+title
+
+amount
+
+expense_date
+
+timestamps
+
+settlements
+
+id
+
+colocation_id
+
+from_user_id
+
+to_user_id
+
+amount
+
+is_paid
+
+paid_at
+
+timestamps
+
+8️⃣ Relations Eloquent
+
+User :
+
+hasMany Expenses
+
+belongsToMany Colocations
+
+hasMany Settlements (from)
+
+hasMany Settlements (to)
+
+Colocation :
+
+belongsTo Owner (User)
+
+belongsToMany Users
+
+hasMany Expenses
+
+hasMany Categories
+
+hasMany Invitations
+
+hasMany Settlements
+
+Expense :
+
+belongsTo Colocation
+
+belongsTo User (payer)
+
+belongsTo Category
+
+Settlement :
+
+belongsTo User (from)
+
+belongsTo User (to)
+
+belongsTo Colocation
+
+9️⃣ Sécurité
+
+CSRF protection (@csrf)
+
+Validation serveur (FormRequest)
+
+Validation HTML5
+
+Blade escaping {{ }}
+
+Requêtes préparées Eloquent
+
+Middleware rôle
+
+Protection multi-colocation
+
+🔟 UX / UI
+
+Blade + Tailwind
+
+Responsive (mobile / tablet / desktop)
+
+Messages erreurs clairs
+
+JS natif pour interactions simples
+
+Filtre par mois dynamique
+
+1️⃣1️⃣ Scénarios Clés
+Scénario 1 – Invitation
+
+Owner → génère token → envoi email → acceptation → vérification → ajout member.
+
+Scénario 2 – Dépense
+
+Ajout dépense → recalcul soldes → affichage dettes simplifiées.
+
+Scénario 3 – Départ avec dette
+
+Calcul dette → pénalité réputation → redistribution.
+
+Scénario 4 – Blocage multi-colocation
+
+Tentative création ou acceptation → vérification membership actif → blocage.
+
+1️⃣2️⃣ Livrables
+
+Repository GitHub
+
+Présentation (Slides)
+
+UML :
+
+Diagramme cas d’utilisation
+
+Diagramme de classes
+
+1️⃣3️⃣ Critères de Performance
+
+Respect MVC strict
+
+Code propre et maintenable
+
+OOP correct
+
+Migrations utilisées
+
+Relations Eloquent correctes
+
+Sécurité complète
+
+Gestion rôles correcte
+
+UI responsive
+
+Commits propres
+
+📌 Résultat Attendu
+
+Une application :
+
+✔ Stable
+✔ Sécurisée
+✔ Bien structurée
+✔ Conforme aux standards Laravel
+✔ Prête pour démonstration technique (12 min)

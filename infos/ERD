@@ -1,0 +1,178 @@
+ERD Concept
+
+
+🧍‍♂️ 1. users
+
+id (PK)
+
+name
+
+email (unique)
+
+password
+
+created_at
+
+updated_at
+
+🔗 Relations:
+
+hasMany colocations (as owner)
+
+belongsToMany colocations (via colocation_user)
+
+hasMany expenses
+
+hasMany payments
+
+hasMany sent invitations
+
+hasMany received invitations
+
+🏠 2. colocations
+
+id (PK)
+
+name
+
+owner_id (FK → users.id)
+
+created_at
+
+updated_at
+
+🔗 Relations:
+
+belongsTo owner (User)
+
+belongsToMany users (via colocation_user)
+
+hasMany expenses
+
+hasMany categories
+
+hasMany invitations
+
+🔁 3. colocation_user (Pivot)
+
+id (optional)
+
+colocation_id (FK)
+
+user_id (FK)
+
+joined_at
+
+📌 Role:
+تمثل الأعضاء داخل السكن.
+
+Relation:
+Many-to-Many بين users و colocations
+
+✉️ 4. invitations (Internal Only)
+
+id
+
+colocation_id (FK)
+
+sender_id (FK → users.id)
+
+receiver_id (FK → users.id)
+
+status ENUM('pending','accepted','refused')
+
+created_at
+
+updated_at
+
+📌 Role:
+دعوة داخل التطبيق فقط
+
+📂 5. categories
+
+id
+
+colocation_id (FK)
+
+name
+
+created_at
+
+updated_at
+
+📌 مثال:
+
+Loyer
+
+Électricité
+
+Internet
+
+Nourriture
+
+💸 6. expenses
+
+id
+
+colocation_id (FK)
+
+category_id (FK)
+
+paid_by (FK → users.id)
+
+title
+
+amount (decimal)
+
+expense_date
+
+created_at
+
+updated_at
+
+📌 تمثل المصاريف المدفوعة من طرف عضو
+
+💳 7. payments
+
+id
+
+colocation_id (FK)
+
+payer_id (FK → users.id)
+
+receiver_id (FK → users.id)
+
+amount
+
+payment_date
+
+created_at
+
+updated_at
+
+📌 تمثل تسديد دين بين عضوين
+
+🔷 Final ERD Relations (Concept)
+User
+ ├── owns → Colocation
+ ├── belongsToMany → Colocation
+ ├── pays → Expense
+ ├── sends → Invitation
+ ├── receives → Invitation
+ └── makes → Payment
+
+Colocation
+ ├── hasMany → Expense
+ ├── hasMany → Category
+ ├── hasMany → Invitation
+ └── belongsToMany → User
+
+Expense
+ ├── belongsTo → User (paid_by)
+ ├── belongsTo → Colocation
+ └── belongsTo → Category
+
+Payment
+ ├── payer → User
+ ├── receiver → User
+ └── belongsTo → Colocation
