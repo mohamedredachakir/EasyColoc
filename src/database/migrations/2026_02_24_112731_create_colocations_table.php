@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\ColocationStatus;
 
 return new class extends Migration
 {
@@ -13,6 +14,9 @@ return new class extends Migration
     {
         Schema::create('colocations', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('status', [ColocationStatus::ACTIVE, ColocationStatus::CANCELLED])->default(ColocationStatus::ACTIVE);
             $table->timestamps();
         });
     }
