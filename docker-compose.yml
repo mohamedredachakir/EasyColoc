@@ -1,5 +1,3 @@
-
-
 services:
   app:
     build:
@@ -8,7 +6,7 @@ services:
     container_name: laravel_app
     user: "1000:1000"
     volumes:
-      - ./src:/var/www/html  # Or use ./:/var/www/html if Laravel root
+      - ./src:/var/www/html # Or use ./:/var/www/html if Laravel root
     depends_on:
       - postgres
 
@@ -47,6 +45,19 @@ services:
       - "5050:80"
     depends_on:
       - postgres
+
+  node:
+    image: node:20-alpine
+    container_name: laravel_node
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - "5173:5173"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
 
 volumes:
   pgtables:
