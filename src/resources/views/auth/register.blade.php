@@ -1,52 +1,107 @@
 <x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
+
+    {{-- Title --}}
+    <div style="text-align:center; margin-bottom:2.25rem;">
+        <h2 style="font-size:1.6rem; font-weight:900; letter-spacing:-0.04em; color:var(--text-main); margin-bottom:0.35rem;">Create your account</h2>
+        <p style="font-size:0.82rem; color:var(--text-dim); font-weight:600;">Join EasyColoc and start tracking your shared expenses.</p>
+    </div>
+
+    <form method="POST" action="{{ route('register') }}" style="display:flex; flex-direction:column; gap:1.1rem;">
         @csrf
 
-        <!-- Name -->
+        {{-- Full Name --}}
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            <label class="field-label" for="name">Full Name</label>
+            <input
+                id="name"
+                type="text"
+                name="name"
+                value="{{ old('name') }}"
+                class="modern-input"
+                placeholder="Antoine Dupont"
+                required
+                autofocus
+                autocomplete="name">
+            @error('name')
+                <p style="margin-top:0.5rem; font-size:0.72rem; font-weight:700; color:var(--danger);">{{ $message }}</p>
+            @enderror
         </div>
 
-        <!-- Email Address -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        {{-- Email --}}
+        <div>
+            <label class="field-label" for="email">Email address</label>
+            <input
+                id="email"
+                type="email"
+                name="email"
+                value="{{ old('email') }}"
+                class="modern-input"
+                placeholder="you@example.com"
+                required
+                autocomplete="username">
+            @error('email')
+                <p style="margin-top:0.5rem; font-size:0.72rem; font-weight:700; color:var(--danger);">{{ $message }}</p>
+            @enderror
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        {{-- Password --}}
+        <div>
+            <label class="field-label" for="password">Password</label>
+            <input
+                id="password"
+                type="password"
+                name="password"
+                class="modern-input"
+                placeholder="Min. 8 characters"
+                required
+                autocomplete="new-password">
+            @error('password')
+                <p style="margin-top:0.5rem; font-size:0.72rem; font-weight:700; color:var(--danger);">{{ $message }}</p>
+            @enderror
         </div>
 
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        {{-- Confirm Password --}}
+        <div>
+            <label class="field-label" for="password_confirmation">Confirm Password</label>
+            <input
+                id="password_confirmation"
+                type="password"
+                name="password_confirmation"
+                class="modern-input"
+                placeholder="Repeat password"
+                required
+                autocomplete="new-password">
+            @error('password_confirmation')
+                <p style="margin-top:0.5rem; font-size:0.72rem; font-weight:700; color:var(--danger);">{{ $message }}</p>
+            @enderror
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
-            </a>
+        {{-- Terms mini-note --}}
+        <p style="font-size:0.7rem; color:var(--text-dim); font-weight:600; line-height:1.6;">
+            By registering you agree to our fair-use policy. Your data is never sold.
+        </p>
 
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
-        </div>
+        {{-- Submit --}}
+        <button type="submit" class="btn-premium" style="width:100%; justify-content:center;">
+            Create Account
+            <svg xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+        </button>
     </form>
+
+    {{-- Divider --}}
+    <div style="display:flex; align-items:center; gap:1rem; margin:1.75rem 0;">
+        <div style="flex:1; height:1px; background:var(--border-card);"></div>
+        <span style="font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.14em; color:var(--text-dim);">Have an account?</span>
+        <div style="flex:1; height:1px; background:var(--border-card);"></div>
+    </div>
+
+    {{-- Login link --}}
+    <a href="{{ route('login') }}"
+       class="btn-ghost"
+       style="width:100%; text-align:center; justify-content:center; text-decoration:none;">
+        Sign in instead
+    </a>
+
 </x-guest-layout>
