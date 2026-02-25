@@ -39,8 +39,11 @@ Route::middleware(['auth'])->group(function() {
     Route::resource('expenses', ExpenseController::class);
     Route::resource('categories', CategoryController::class);
 
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+    
     Route::get('invitations', [InvitationController::class, 'index'])->name('invitations.index');
-    Route::post('invitations/{id}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
-    Route::post('invitations/{id}/refuse', [InvitationController::class, 'refuse'])->name('invitations.refuse');
+    Route::post('invitations/invite', [InvitationController::class, 'invite'])->name('invitations.invite');
+    Route::post('invitations/{invitation}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+    Route::post('invitations/{invitation}/refuse', [InvitationController::class, 'refuse'])->name('invitations.refuse');
 });
