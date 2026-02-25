@@ -56,15 +56,23 @@ class ColocationController extends Controller
     public function show(Colocation $colocation)
     {
         $colocation->load('users','expenses.payer','categories','invitations.receiver');
-        $members = $colocation->users->map(function($user) use ($colocation) {
-        $totalPaid = $colocation->expenses->where('payer_id', $user->id)->sum('amount');
-        $share = $colocation->expenses->sum('amount') / $colocation->users->count();
-        $balance = $totalPaid - $share;
-        $user->balance = $balance;
-        return $user;
-    });
 
-        return view('colocations.show', compact('colocation'));
+        $total = $colocation->expenses->sum('amount');
+        $membersCount = $colocation->users->count();
+        $share = $membersCount > 0 ? $total / $membersCount : 0;
+
+        $members = $colocation->users->map(function($user) use ($colocation, $share) {
+            $totalPaid = $colocation->expenses
+                            ->where('payer_id', $user->id)
+                            ->sum('amount');
+
+            $user->paid = $totalPaid;
+            $user->balance = $totalPaid - $share;
+
+            return $user;
+        });
+
+        return view('colocations.show', compact('colocation', 'members', 'total', 'share'));
     }
 
     /**
