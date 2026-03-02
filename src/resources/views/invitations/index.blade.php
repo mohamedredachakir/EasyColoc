@@ -1,61 +1,49 @@
-<x-app-layout>
+@extends('layouts.app')
 
-<div style="margin-bottom:2.5rem;" class="animate-smooth">
-    <div class="page-eyebrow">Inbox</div>
-    <h1 class="page-title">Invitations</h1>
-    <p class="page-subtitle">Pending requests to join shared living spaces.</p>
+@section('content')
+<div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 2.5rem; background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white; border: none;">
+    <div>
+        <h1 style="margin: 0; font-size: 2.25rem;">✉️ Invitations</h1>
+        <p style="opacity: 0.9; font-size: 1.125rem; margin-top: 0.5rem;">Join households you've been invited to.</p>
+    </div>
+    <a href="{{ route('invitations.create') }}" class="btn" style="background: white; color: #db2777; height: fit-content; border: none; font-weight: 600;">SEND NEW</a>
 </div>
 
-@if($invitations->isEmpty())
-    <div style="padding:5rem 2rem; text-align:center; border:1px dashed var(--border); border-radius:var(--radius-lg);">
-        <div style="width:64px; height:64px; border-radius:18px; background:var(--bg-elevated); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; opacity:0.6;">
-            <svg xmlns="http://www.w3.org/2000/svg" style="width:30px;height:30px;color:var(--text-dim);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-        </div>
-        <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-bottom:0.4rem;">All caught up!</h3>
-        <p style="font-size:0.82rem; color:var(--text-dim);">No pending invitations.</p>
-    </div>
-@else
-    <div style="display:flex; flex-direction:column; gap:0.75rem;">
-        @foreach($invitations as $invitation)
-            <div class="glass-card animate-smooth" style="display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.75rem; flex-wrap:wrap; gap:1rem;">
-
-                {{-- Sender info --}}
-                <div style="display:flex; align-items:center; gap:1rem; flex:1; min-width:200px;">
-                    <div style="width:44px; height:44px; border-radius:12px; background:var(--primary-dim); border:1px solid var(--border-bright); display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:900; color:var(--primary); flex-shrink:0;">
-                        {{ strtoupper(substr($invitation->sender->name, 0, 1)) }}
-                    </div>
-                    <div>
-                        <div style="font-size:0.9rem; font-weight:800; color:var(--text-main); margin-bottom:3px;">
-                            {{ $invitation->sender->name }}
-                            <span style="font-size:0.72rem; font-weight:600; color:var(--text-dim); margin-left:4px;">invited you to</span>
-                        </div>
-                        <div style="font-size:0.85rem; font-weight:800; color:var(--primary);">{{ $invitation->colocation->name }}</div>
-                    </div>
-                </div>
-
-                {{-- Date + badge --}}
-                <div style="display:flex; align-items:center; gap:1rem; flex-shrink:0;">
-                    <span class="badge badge-warm">pending</span>
-                    <span style="font-size:0.7rem; color:var(--text-dim); font-weight:600;">{{ $invitation->created_at->diffForHumans() }}</span>
-                </div>
-
-                {{-- Actions --}}
-                <div style="display:flex; gap:0.6rem; flex-shrink:0;">
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>From Sender</th>
+                <th>Colocation Name</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($invitations as $invitation)
+            <tr>
+                <td style="font-weight: 600; color: var(--text);">{{ $invitation->sender->name }}</td>
+                <td>{{ $invitation->colocation->name }}</td>
+                <td><span class="status-badge" style="background: #fdf2f8; color: #db2777;">{{ $invitation->status }}</span></td>
+                <td>{{ $invitation->created_at->diffForHumans() }}</td>
+                <td style="display: flex; gap: 0.75rem;">
                     <form action="{{ route('invitations.accept', $invitation->id) }}" method="POST">
                         @csrf
-                        <button class="btn-premium" style="padding:0.55rem 1.25rem; font-size:0.8rem;">Accept</button>
+                        <button type="submit" class="btn" style="background: #ecfdf5; color: #10b981; border: 1px solid #10b981;">ACCEPT</button>
                     </form>
-                    <form action="{{ route('invitations.refuse', $invitation->id) }}" method="POST">
+                    <form action="{{ route('invitations.decline', $invitation->id) }}" method="POST">
                         @csrf
-                        <button class="btn-ghost" style="padding:0.55rem 1.25rem; font-size:0.8rem; color:var(--danger); border-color:rgba(221,128,128,0.25);">Decline</button>
+                        <button type="submit" class="btn" style="background: #fef2f2; color: #ef4444; border: 1px solid #ef4444;">DECLINE</button>
                     </form>
-                </div>
-
-            </div>
-        @endforeach
-    </div>
-@endif
-
-</x-app-layout>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-light);">No pending invitations.</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+@endsection
