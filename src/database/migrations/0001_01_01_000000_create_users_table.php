@@ -3,7 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\RoleEnum;
+use App\enum\RoleEnum;
+
+
 return new class extends Migration
 {
     /**
@@ -17,9 +19,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', [RoleEnum::ADMIN, RoleEnum::OWNER, RoleEnum::MEMBER, RoleEnum::GUEST])->defaultTo(RoleEnum::GUEST);
+            $table->enum('role', [RoleEnum::USER, RoleEnum::ADMIN, RoleEnum::OWNER, RoleEnum::MEMBER])->default(RoleEnum::USER);
             $table->integer('reputation')->default(0);
-            $table->boolean('is_banned')->default(false);
+            $table->boolean('is_ban')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

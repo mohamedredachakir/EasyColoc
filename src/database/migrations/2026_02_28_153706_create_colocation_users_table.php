@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('colocation_id')->constrained('colocations')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->timestamp('joined_at')->useCurrent();
-            $table->timestamp('left_at')->nullable();
+            $table->integer('amount')->default(0);
+            $table->dateTime('entry_date')->default(now());
+            $table->dateTime('exit_date')->nullable();
             $table->timestamps();
         });
     }
@@ -28,4 +29,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('colocation_users');
     }
-};
+}   ;

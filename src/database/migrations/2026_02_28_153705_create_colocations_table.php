@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use App\enum\ColocationStatus;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,10 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('colocations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('colocation_id')->constrained('colocations')->cascadeOnDelete();
             $table->string('name');
+            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->enum('status', [ColocationStatus::ACTIVE, ColocationStatus::CANCELLED])->default(ColocationStatus::ACTIVE);
             $table->timestamps();
         });
     }
@@ -24,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('colocations');
     }
 };
