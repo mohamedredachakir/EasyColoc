@@ -1,0 +1,242 @@
+
+# 🔐 1️⃣ Authentification & Gestion des utilisateurs
+
+## 🎯 Objectif
+
+## ✅ Fonctionnalités
+
+* Inscription avec nom, email et mot de passe.
+* Connexion sécurisée.
+* Déconnexion.
+* Gestion du profil (modifier informations personnelles).
+* Premier utilisateur inscrit → promu automatiquement Global Admin.
+* Blocage automatique des utilisateurs bannis (refus d’accès).
+
+---
+
+# 🛡️ 2️⃣ Global Admin
+
+## 🎯 Objectif
+
+إدارة ومراقبة المنصة بالكامل.
+
+## ✅ Fonctionnalités
+
+### 👥 Gestion des utilisateurs
+
+* Voir la liste complète des utilisateurs.
+
+* Consulter:
+
+  * Email
+  * Reputation
+  * Statut (Actif / Banni)
+  * Nombre de colocations
+
+* Bannir un utilisateur.
+
+* Débannir un utilisateur.
+
+### 📊 Statistiques globales
+
+* Nombre total d’utilisateurs.
+* Nombre total de colocations.
+* Nombre total de dépenses.
+* Nombre d’utilisateurs bannis.
+
+---
+
+# 🏠 3️⃣ Gestion des colocations
+
+## 🎯 Objectif
+
+Créer et gérer une colocation.
+
+## ✅ Création
+
+* Un utilisateur peut créer une colocation.
+* Il devient automatiquement Owner.
+
+## ✅ Rejoindre une colocation
+
+* Via invitation par email/token.
+* Vérification de validité du token.
+* Blocage si l’utilisateur a déjà une colocation active.
+
+## ✅ Règle importante
+
+* Un utilisateur ne peut avoir qu’une seule colocation active.
+
+## ✅ Départ
+
+* Un Member peut quitter la colocation.
+* Un Owner ne peut pas quitter directement sans action spécifique.
+
+## ✅ Annulation
+
+* Seul l’Owner peut annuler la colocation.
+* Le statut devient “cancelled”.
+
+---
+
+# ✉️ 4️⃣ Système d’invitation
+
+## 🎯 Objectif
+
+Permettre à l’Owner d’inviter des membres.
+
+## ✅ Fonctionnement
+
+* Génération d’un token unique.
+* Envoi d’un email d’invitation.
+* L’utilisateur peut accepter ou refuser.
+* Vérification que l’email correspond à l’invitation.
+* Blocage si déjà membre actif ailleurs.
+
+---
+
+# 💰 5️⃣ Gestion des dépenses
+
+## 🎯 Objectif
+
+Enregistrer et suivre les dépenses communes.
+
+## ✅ Ajouter une dépense
+
+Chaque dépense contient :
+
+* Titre
+* Montant
+* Date
+* Catégorie
+* Payeur
+
+## ✅ Règle de répartition
+
+* La dépense est divisée équitablement entre tous les membres actifs.
+
+## ✅ Historique
+
+* Liste complète des dépenses.
+* Filtre par mois.
+* Statistiques par catégorie.
+
+---
+
+# ⚖️ 6️⃣ Calcul des balances
+
+## 🎯 Objectif
+
+Déterminer la situation financière de chaque membre.
+
+## ✅ Calcul automatique
+
+Pour chaque membre :
+
+Solde = Total payé – Total dû
+
+* Solde positif → le membre doit recevoir de l’argent.
+* Solde négatif → le membre doit payer.
+* Solde zéro → situation équilibrée.
+
+---
+
+# 🔄 7️⃣ Vue “Qui doit à qui”
+
+## 🎯 Objectif
+
+Afficher une version simplifiée des dettes.
+
+## ✅ Fonctionnement
+
+* Analyse des soldes.
+* Génération de remboursements optimisés.
+* Réduction du nombre de transactions nécessaires.
+
+Exemple :
+Au lieu de 5 dettes croisées,
+le système propose 2 paiements clairs.
+
+---
+
+# 💳 8️⃣ Paiements simples
+
+## 🎯 Objectif
+
+Permettre d’enregistrer un remboursement.
+
+## ✅ Fonctionnalité
+
+* Bouton “Marquer payé”.
+* Mise à jour des soldes.
+* Historique des paiements.
+
+---
+
+# ⭐ 9️⃣ Système de réputation
+
+## 🎯 Objectif
+
+Évaluer le comportement financier des membres.
+
+## ✅ Règles
+
+* Quitter sans dette → +1
+* Quitter avec dette → -1
+* Annulation avec dette → -1
+* Annulation sans dette → +1
+
+## ⚠️ Cas spécial
+
+Si un Owner retire un membre avec dette :
+
+* La dette est transférée à l’Owner.
+* Le membre reçoit -1.
+
+---
+
+# 🏷️ 🔟 Gestion des catégories
+
+## 🎯 Objectif
+
+Organiser les dépenses.
+
+## ✅ Fonctionnalités
+
+* Ajouter catégorie.
+* Modifier catégorie.
+* Supprimer catégorie.
+* Statistiques par catégorie.
+
+---
+
+# 📅 1️⃣1️⃣ Filtrage mensuel
+
+## 🎯 Objectif
+
+Analyser les dépenses par période.
+
+## ✅ Fonctionnalité
+
+* Filtrer les dépenses par mois.
+* Par défaut : affichage de tous les mois.
+
+---
+
+# 🧠 Philosophie globale du système
+
+Le système repose sur :
+
+* Transparence
+* Équité
+* Simplicité
+* Responsabilité financière
+
+Chaque règle métier vise à éviter :
+
+* Les conflits
+* Les erreurs de calcul
+* Les abus
+
+---
+

@@ -1,0 +1,193 @@
+EasyColoc est une application web de gestion de colocation qui permet de suivre les dépenses communes et de répartir automatiquement les dettes entre membres.
+L’objectif est d’éviter les calculs manuels et d’avoir une vision claire de « qui doit quoi à qui ».
+PHP
+MySQL
+PostgreSQL
+UML
+Référentiels
+[2023] Développeur web et web mobile
+Compétences transversales
+Contexte du projet
+**Contexte du projet**
+
+1 ) La version actuelle permet :
+
+La création de colocations et la gestion des membres
+L’invitation via lien/token (avec envoi email)
+L’ajout et la suppression de dépenses avec catégories
+Le calcul automatique des soldes et des remboursements simplifiés
+L’enregistrement des paiements (« Marquer payé »)
+Un système de réputation selon le comportement financier
+Une administration globale (statistiques, bannissement/débannissement)
+Un filtrage des dépenses par mois dans la page d’une colocation
+2 ) Objectifs :
+
+2.1 Objectifs fonctionnels
+Gérer des colocations (création, annulation, départ/retrait de membres)
+Suivre les dépenses partagées
+Calculer automatiquement les soldes individuels
+Afficher une vue simplifiée des remboursements
+2.2 Objectifs techniques
+Architecture : monolithique MVC Laravel
+SGBD : MySQL / PostgreSQL via migrations
+ORM : Eloquent avec relations hasMany et belongsToMany
+Authentification : Laravel Breeze / jetstream
+Système de rôles :
+Admin global :
+Accès aux statistiques globales (colocations, utilisateurs, dépenses).
+Possibilité de bannir / désactiver des utilisateurs.
+Peut également être Owner ou Member dans une ou plusieurs colocations.
+User :
+
+Rôle standard de l’application.
+Peut créer une colocation (devient Owner).
+Peut rejoindre une colocation existante (devient Member).
+3) Périmètre (réalisé)
+
+3.1 Inclus
+Authentification et profil utilisateur
+Premier utilisateur inscrit promu admin global automatiquement
+Gestion des colocations (create, show, update, destroy, cancel)
+Invitations par token avec acceptation ou refus
+Restriction : une seule colocation active par utilisateur
+Gestion des dépenses (montant, date, catégorie, payeur)
+Gestion des catégories
+Calcul des balances et vue « qui doit à qui »
+Paiements simples (« Marquer payé »)
+Système de réputation (+1 / -1)
+Dashboard admin global (utilisateurs, colocations, dépenses, bannis)
+Filtre des dépenses par mois sur la vue d’une colocation (défaut : tous les mois)
+3.2 Hors périmètre (Bonus)
+Paiement Stripe
+Notifications en temps réel
+Calendrier
+Export de données
+4) Acteurs et rôles
+
+Member : membre d’une colocation
+Owner : membre administrateur de sa colocation (créateur initial)
+Global Admin : administrateur plateforme (statistiques et modération des utilisateurs)
+5) Fonctionnalités clés
+5.1 Utilisateurs
+Inscription, connexion et gestion du profil
+Premier inscrit promu admin global automatiquement
+Blocage des utilisateurs bannis (déconnexion automatique et refus d’accès)
+5.2 Colocations
+Création d’une colocation avec owner automatique
+Invitation par email/token
+Une seule colocation active par utilisateur
+Départ d’un membre (left_at)
+Annulation d’une colocation (status = cancelled)
+5.3 Dépenses
+Ajout d’une dépense (titre, montant, date, catégorie, payeur)
+Historique des dépenses
+Statistiques par catégorie et mensuelles
+Filtre de la liste des dépenses par mois
+5.4 Balances et dettes
+Calcul : total payé, part individuelle, solde
+Vue synthétique « qui doit à qui »
+Réduction des dettes par enregistrement de paiements
+5.5 Réputation
+Départ ou annulation avec dette : -1
+Départ ou annulation sans dette : +1
+Cas spécifique :
+Si un owner retire un membre ayant une dette, celle-ci est imputée à l’owner (ajustement interne).
+5.6 Paiements simples
+Action « Marquer payé » depuis la liste des settlements
+
+6) User Stories
+6.1 Member
+S’inscrire et se connecter
+Rejoindre une colocation via invitation
+Voir les membres, rôles et réputation
+Ajouter une dépense
+Voir son solde et la vue « qui doit à qui »
+Marquer un paiement
+Quitter une colocation (sauf owner)
+6.2 Owner
+Créer une colocation
+Inviter des membres
+Retirer un membre (sauf owner)
+Gérer les catégories
+Annuler la colocation
+6.3 Global Admin
+Voir les statistiques globales
+Bannir ou débannir des utilisateurs
+7) Scénarios d’implémentation
+Scénario 1 – Invitation
+L’owner envoie une invitation (token unique + email).
+L’utilisateur invité accepte ou refuse.
+Vérification que l’email correspond à l’invitation.
+Si l’utilisateur a déjà une colocation active : blocage.
+Sinon : ajout comme member.
+Scénario 2 – Dépense commune
+Ajout d’une dépense avec payeur, montant, date et catégorie.
+Recalcul des soldes de tous les membres actifs.
+Affichage de la synthèse des remboursements.
+Scénario 3 – Départ / retrait avec dette
+Si un membre quitte avec dette : pénalité de réputation et redistribution via ajustements.
+Si un owner retire un membre avec dette : dette imputée à l’owner (règle actuelle).
+Scénario 4 – Blocage multi-colocation active
+Création d’une nouvelle colocation bloquée si un membership actif existe déjà.
+Acceptation d’une invitation bloquée dans le même cas.
+Modalités pédagogiques
+Travail: individuel Durée de travail:
+
+5 jours Date de lancement du brief: 23/02/2026
+
+Date limite de soumission: 27/02/2026
+
+Modalités d'évaluation
+Une durée de 40 min organisée comme suit : 
+- Présenter une défense publique de son travail devant les jurys.
+- Chaque apprenants n'aura que ~12 minutes pour Démontrer le contenu et la fonctionnalité du site Web (Démonstration, explication du code source). 
+- Code Review \ Questions culture Web (8 minutes) 
+- Mise en situation (20 minutes)
+Livrables
+_ Lien de Repository Github du projet 
+_ Lien de la présentation
+_ Les diagrammes UML
+  |_ Diagramme des cas d'utilisations
+  |_ Diagramme de classes
+Critères de performance
++ Respect strict de l’architecture MVC (Model – View – Controller).
+
++ Séparation claire entre la logique métier, les contrôleurs et les vues Blade.
+
++ Application cohérente des principes OOP (encapsulation, responsabilité unique, organisation des classes).
+
++ Code structuré, lisible et maintenable.
+
++ Respect des conventions Laravel (naming, organisation des dossiers).
+
++ Utilisation des migrations pour la gestion et le versionning de la base de données.
+
++ Utilisation correcte d’Eloquent ORM avec relations (hasMany, belongsToMany, pivot table).
+
++ Utilisation des requêtes préparées via Eloquent / Query Builder pour éviter les injections SQL.
+
++ Bonne modélisation relationnelle avec clés étrangères et contraintes.
+
++ Mise en place de la protection CSRF (@csrf).
+
++ Protection contre les attaques XSS grâce à l’échappement automatique Blade ({{ }}).
+
++ Validation côté serveur via Form Request ou méthode validate().
+
++ Validation et filtrage des données d’entrée pour éviter toute injection malveillante.
+
++ Gestion des autorisations selon les rôles (Admin, Owner, Member).
+
++ Validation côté client avec HTML5 (required, type, pattern, etc.).
+
++ Utilisation de JavaScript natif pour améliorer l’expérience utilisateur.
+
++ Messages d’erreurs clairs et compréhensibles.
+
++ Interface responsive adaptée mobile, tablette et desktop.
+
++ Utilisation de Blade + Tailwind CSS.
+
++ Utilisation de Git / GitHub pour le versionning.
+
++ Commits clairs et bien structurés.
