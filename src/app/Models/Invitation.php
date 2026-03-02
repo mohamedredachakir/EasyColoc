@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Colocation;
+use App\Models\User;
 
 class Invitation extends Model
 {
@@ -11,9 +13,25 @@ class Invitation extends Model
         'sender_id',
         'receiver_id',
         'status',
+        'token',
     ];
 
-    public function colocation() { return $this->belongsTo(Colocation::class); }
-    public function sender() { return $this->belongsTo(User::class, 'sender_id'); }
-    public function receiver() { return $this->belongsTo(User::class, 'receiver_id'); }
+    protected $casts = [
+        'status' => \App\enum\InvitationStatus::class,
+    ];
+
+    public function colocation()
+    {
+        return $this->belongsTo(Colocation::class);
+    }
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function receiver()
+    {
+        return $this->belongsTo(User::class, 'receiver_id');
+    }
 }

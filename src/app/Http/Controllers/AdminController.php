@@ -2,51 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Colocation;
 use App\Models\Expense;
-use App\Enums\RoleEnum;
-use Illuminate\Http\Request;
+use App\Models\Payment;
+use App\Models\Category;
+use App\Models\Invitation;
+use App\Models\ColocationUser;
 
 class AdminController extends Controller
 {
     public function index()
     {
-        // Don't list other admins in the regular user table
-        $users = User::where('role', '!=', RoleEnum::ADMIN->value)->get();
-        
-        $stats = [
-            'total_users' => User::count(),
-            'total_colocations' => Colocation::count(),
-            'total_expenses' => Expense::sum('amount'),
-        ];
-        
-        return view('admin.index', compact('users', 'stats'));
+        return view('admin.index');
     }
 
-    public function ban(User $user)
-    {
-        $user->update([
-            'is_banned' => true,
-        ]);
-        return redirect()->route('admin.index')->with('success', 'User banned successfully.');
+    public function users(){
+        $users = User::all();
+        return view('admin.users', compact('users'));
+    
     }
-
-    public function unban(User $user)
-    {
-        $user->update([
-            'is_banned' => false,
-        ]);
-        return redirect()->route('admin.index')->with('success', 'User unbanned successfully.');
+    public function colocations(){
+        $colocations = Colocation::all();
+        return view('admin.colocations', compact('colocations'));
     }
-
-    public function destroy(User $user)
-    {
-        if ($user->role === RoleEnum::ADMIN->value) {
-            return redirect()->back()->with('error', 'Cannot delete an admin.');
-        }
+    public function expenses(){
+        $expenses = Expense::with(['colocation', 'user', 'category'])->get();
+        return view('admin.expenses', compact('expenses'));
+    }
+    public function payments(){
+        $payments = Payment::with(['colocation', 'user'])->get();
+        return view('admin.payments', compact('payments'));
+    }
+    public function categories(){
+        $categories = Category::all();
+        return view('admin.categories', compact('categories'));
+    }
+    public function invitations(){
+        $invitations = Invitation::with(['sender', 'receiver', 'colocation'])->get();
+        return view('admin.invitations', compact('invitations'));
+    }
+    public function ban($id){
+        $user = User::findOrFail($id);
+        $user->is_ban = true;
+        $user->save();
         
-        $user->delete();
-        return redirect()->route('admin.index')->with('success', 'User deleted successfully.');
+        ColocationUser::where('user_id', $id)->delete();
+        
+        return redirect()->route('admin.users')->with('success', 'User banned successfully!');
+    }
+    public function unban($id){
+        $user = User::findOrFail($id);
+        $user->is_ban = false;
+        $user->save();
+        
+        return redirect()->route('admin.users')->with('success', 'User unbanned successfully!');
     }
 }

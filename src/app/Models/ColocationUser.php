@@ -2,21 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\Colocation;
+use App\Models\User;
 
-class ColocationUser extends Pivot
+class ColocationUser extends Model
 {
-    protected $table = 'colocation_user';
-
     protected $fillable = [
         'colocation_id',
         'user_id',
-        'joined_at',
-        'left_at',
+        'amount',
+        'entry_date',
+        'exit_date',
     ];
 
-    protected $dates = [
-        'joined_at',
-        'left_at',
-    ];
+
+    public function colocation()
+    {
+        return $this->belongsTo(Colocation::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

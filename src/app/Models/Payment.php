@@ -2,21 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Colocation;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
     protected $fillable = [
+        'name',
         'colocation_id',
-        'from_user_id',
-        'to_user_id',
+        'user_id',
         'amount',
-        'paid_at',
+        'payment_date',
     ];
 
-    protected $dates = ['paid_at'];
+    public function colocation()
+    {
+        return $this->belongsTo(Colocation::class);
+    }
 
-    public function colocation() { return $this->belongsTo(Colocation::class); }
-    public function fromUser() { return $this->belongsTo(User::class, 'from_user_id'); }
-    public function toUser() { return $this->belongsTo(User::class, 'to_user_id'); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

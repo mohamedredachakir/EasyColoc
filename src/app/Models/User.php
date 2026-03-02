@@ -6,6 +6,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Colocation;
+use App\Models\Expense;
+use App\Models\Payment;
+use App\Models\Invitation;
 
 class User extends Authenticatable
 {
@@ -23,7 +27,7 @@ class User extends Authenticatable
         'password',
         'role',
         'reputation',
-        'is_banned',
+        'is_ban',
     ];
 
     /**
@@ -49,12 +53,26 @@ class User extends Authenticatable
         ];
     }
 
-    public function ownedColocations() { return $this->hasMany(Colocation::class, 'owner_id'); }
-    public function colocations() { return $this->belongsToMany(Colocation::class, 'colocation_users')->withTimestamps()->withPivot('joined_at','left_at'); }
-    public function expenses() { return $this->hasMany(Expense::class, 'payer_id'); }
-    public function paymentsSent() { return $this->hasMany(Payment::class, 'from_user_id'); }
-    public function paymentsReceived() { return $this->hasMany(Payment::class, 'to_user_id'); }
-    public function sentInvitations() { return $this->hasMany(Invitation::class, 'sender_id'); }
-    public function receivedInvitations() { return $this->hasMany(Invitation::class, 'receiver_id'); }
+    public function colocations()
+    {
+        return $this->belongsToMany(Colocation::class, 'colocation_users')
+                    ->withPivot(['amount', 'entry_date', 'exit_date'])
+                    ->withTimestamps();
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function invitations()
+    {
+        return $this->hasMany(Invitation::class);
+    }
 
 }

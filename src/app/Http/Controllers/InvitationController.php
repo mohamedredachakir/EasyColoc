@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Invitation;
-use App\Models\Colocation;
-use App\Models\User;
-use App\Enums\InvitationStatus;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\Invitation;
+use App\Models\ColocationUser;
+use App\Models\User;
+use App\Models\Colocation;
+use App\enum\InvitationStatus;
+use Illuminate\Support\Str;
 
 class InvitationController extends Controller
 {
@@ -21,89 +22,79 @@ class InvitationController extends Controller
         return view('invitations.index', compact('invitations'));
     }
 
-    public function invite(Request $request)
+    public function create()
+    {
+        $colocations = Colocation::where('owner_id', auth()->id())->get();
+        $users = User::where('id', '!=', auth()->id())->get();
+        
+        return view('invitations.create', compact('colocations', 'users'));
+    }
+
+    public function store(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
             'colocation_id' => 'required|exists:colocations,id',
+            'email' => 'required|email|exists:users,email',
         ]);
 
         $receiver = User::where('email', $request->email)->first();
         
-        // cnt invite yourself
-        if ($receiver->id === auth()->id()) {
-            return redirect()->back()->with('error', 'You cannot invite yourself.');
+        if($receiver->id == auth()->id()) {
+            return back()->with('error', 'You can not invite yourself.');
         }
 
-        // check if im allready in the colocation
-        $colocation = Colocation::findOrFail($request->colocation_id);
-        if ($colocation->users()->where('user_id', $receiver->id)->exists()) {
-            return redirect()->back()->with('error', 'User is already a member of this colocation.');
+        $alreadyMember = ColocationUser::where('colocation_id', $request->colocation_id)
+            ->where('user_id', $receiver->id)
+            ->exists();
+
+        if ($alreadyMember) {
+            return back()->with('error', 'User is already a member of this colocation.');
         }
 
-        // check if there is a pending invitation already
-        $exists = Invitation::where('colocation_id', $request->colocation_id)
+        $alreadyInvited = Invitation::where('colocation_id', $request->colocation_id)
             ->where('receiver_id', $receiver->id)
             ->where('status', InvitationStatus::PENDING)
             ->exists();
 
-        if ($exists) {
-            return redirect()->back()->with('error', 'An invitation is already pending for this user.');
+        if ($alreadyInvited) {
+            return back()->with('error', 'An invitation is already pending for this user.');
         }
 
-        $invite = Invitation::create([
+        Invitation::create([
             'colocation_id' => $request->colocation_id,
             'sender_id' => auth()->id(),
             'receiver_id' => $receiver->id,
             'status' => InvitationStatus::PENDING,
+            'token' => Str::random(32),
         ]);
 
-        if (!$invite) {
-            return redirect()->back()->with('error', 'Invitation not sent.');
-        }
-        return redirect()->back()->with('success', 'Invitation sent successfully.');
+        return redirect()->route('colocation.show', $request->colocation_id)
+            ->with('success', 'Invitation sent successfully!');
     }
 
     public function accept(Invitation $invitation)
     {
-        if ($invitation->receiver_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        if ($invitation->status !== InvitationStatus::PENDING) {
-            return redirect()->route('invitations.index')->with('error', 'This invitation is no longer pending.');
-        }
-
-        DB::transaction(function() use ($invitation) {
-            
-            $invitation->update([
-                'status' => InvitationStatus::ACCEPTED,
-            ]);
-
-            // Add user to the colocation members (pivot table colocation_users)
-            $invitation->colocation->users()->attach($invitation->receiver_id, [
-                'joined_at' => now()
-            ]);
-        });
-
-        return redirect()->route('dashboard')->with('success', 'Invitation accepted! You are now a member of ' . $invitation->colocation->name);
+        $invitation->update(['status' => InvitationStatus::ACCEPTED]);
+        
+        ColocationUser::create([
+            'colocation_id' => $invitation->colocation_id,
+            'user_id' => $invitation->receiver_id,
+            'amount' => 0,
+            'entry_date' => now(),
+        ]);
+        User::where('id', $invitation->receiver_id)->update([
+            'role' => 'member',
+        ]);
+        
+        return redirect()->route('colocation.show', $invitation->colocation)
+            ->with('success', 'You have joined the colocation!');
     }
 
-    public function refuse(Invitation $invitation)
+    public function decline(Invitation $invitation)
     {
+        $invitation->update(['status' => InvitationStatus::REJECTED]);
         
-        if ($invitation->receiver_id !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        if ($invitation->status !== InvitationStatus::PENDING) {
-            return redirect()->route('invitations.index')->with('error', 'This invitation is no longer pending.');
-        }
-
-        $invitation->update([
-            'status' => InvitationStatus::REJECTED,
-        ]);
-
-        return redirect()->route('invitations.index')->with('success', 'Invitation refused.');
+        return redirect()->route('invitations.index')
+            ->with('success', 'Invitation declined.');
     }
 }

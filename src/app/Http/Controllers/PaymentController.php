@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payment;
-use App\Models\Colocation;
-use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Payment;
+use App\Models\ColocationUser;
+use App\Models\User;
+use App\Models\Colocation;
+
 
 class PaymentController extends Controller
 {
@@ -14,35 +16,17 @@ class PaymentController extends Controller
      */
     public function index()
     {
-        // Only show payments from colocations the user belongs to
-        $payments = Payment::whereIn('colocation_id', auth()->user()->colocations->pluck('id'))
-            ->with(['fromUser', 'toUser', 'colocation'])
-            ->latest('paid_at')
-            ->get();
-            
-        return view('payments.index', compact('payments'));
+        $payments = Payment::all();
+        return view('payment.index', compact('payments'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request)
+    public function create()
     {
-        $user = auth()->user();
-        $colocations = $user->colocations;
-        
-        $selected_colocation_id = $request->query('colocation_id');
-        $members = collect();
-
-        if ($selected_colocation_id) {
-            $colocation = $colocations->find($selected_colocation_id);
-            if ($colocation) {
-                // Potential recipients are other members of the colocation
-                $members = $colocation->users->where('id', '!=', $user->id);
-            }
-        }
-
-        return view('payments.create', compact('colocations', 'members', 'selected_colocation_id'));
+        $colocations = \App\Models\Colocation::whereHas('users', fn($q) => $q->where('user_id', auth()->id()))->get();
+        return view('payment.create', compact('colocations'));
     }
 
     /**
@@ -51,94 +35,80 @@ class PaymentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'colocation_id' => 'required|exists:colocations,id',
-            'to_user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:0.01',
+            'name' => 'required',
+            'amount' => 'required',
+            
         ]);
-
-        // Security: Ensure user belongs to this colocation
-        $colocation = auth()->user()->colocations()->find($request->colocation_id);
-        if (!$colocation) {
-            return redirect()->back()->with('error', 'Unauthorized colocation.');
-        }
-
-        // Security: Ensure recipient belongs to the same colocation
-        if (!$colocation->users()->where('user_id', $request->to_user_id)->exists()) {
-            return redirect()->back()->with('error', 'Recipient is not a member of this colocation.');
-        }
-
         Payment::create([
+            'name' => $request->name,
             'colocation_id' => $request->colocation_id,
-            'from_user_id' => auth()->id(),
-            'to_user_id' => $request->to_user_id,
+            'user_id' => $request->user_id,
             'amount' => $request->amount,
-            'paid_at' => now(),
+            'payment_date' => now(),
         ]);
 
-        return redirect()->route('colocations.show', $colocation->id)
-            ->with('success', 'Payment recorded successfully.');
+        ColocationUser::where('user_id', auth()->user()->id)
+            ->where('colocation_id', $request->colocation_id)
+            ->increment('amount', $request->amount);
+        return redirect()->route('payment.index');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Payment $payment)
+    public function show(string $id)
     {
-        if (!auth()->user()->colocations->contains($payment->colocation_id)) {
-            abort(403);
-        }
-
-        $payment->load(['fromUser', 'toUser', 'colocation']);
-        return view('payments.show', compact('payment'));
+        $payment = Payment::findOrFail($id);
+        return view('payment.show', compact('payment'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Payment $payment)
+    public function edit(string $id)
     {
-        if (!auth()->user()->colocations->contains($payment->colocation_id)) {
-            abort(403);
+        $payment = Payment::findOrFail($id);
+        if($payment->user_id != auth()->user()->id){
+            return back()->with('error', 'You are not authorized to edit this payment.');
         }
-
-        $colocations = auth()->user()->colocations;
-        $members = $payment->colocation->users->where('id', '!=', auth()->id());
-
-        return view('payments.edit', compact('payment', 'colocations', 'members'));
+        return view('payment.edit', compact('payment'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Payment $payment)
+    public function update(Request $request, string $id)
     {
-        if (!auth()->user()->colocations->contains($payment->colocation_id)) {
-            abort(403);
-        }
-
         $request->validate([
-            'to_user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:0.01',
+            'name' => 'required',
+            'amount' => 'required',
+            
         ]);
-
+        $payment = Payment::findOrFail($id);
         $payment->update([
-            'to_user_id' => $request->to_user_id,
+            'name' => $request->name,
+            'colocation_id' => $request->colocation_id,
+            'user_id' => $request->user_id,
             'amount' => $request->amount,
+            'payment_date' => now(),
         ]);
 
-        return redirect()->route('payments.index')->with('success', 'Payment updated successfully.');
+        ColocationUser::where('user_id', auth()->user()->id)
+            ->where('colocation_id', $request->colocation_id)
+            ->increment('amount', $request->amount);
+        return redirect()->route('payment.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Payment $payment)
+    public function destroy(string $id)
     {
-        if (!auth()->user()->colocations->contains($payment->colocation_id)) {
-            abort(403);
+        $payment = Payment::findOrFail($id);
+        if($payment->user_id != auth()->user()->id){
+            return back()->with('error', 'You are not authorized to delete this payment.');
         }
-
         $payment->delete();
-        return redirect()->route('payments.index')->with('success', 'Payment deleted successfully.');
+        return redirect()->route('payment.index');
     }
 }

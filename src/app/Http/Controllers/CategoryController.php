@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Colocation;
-use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
@@ -13,12 +13,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        // Only show categories from colocations the user belongs to
-        $categories = Category::whereIn('colocation_id', auth()->user()->colocations->pluck('id'))
-            ->with('colocation')
-            ->get();
-            
-        return view('categories.index', compact('categories'));
+        $categories = Category::all();
+        return view('category.index', compact('categories'));
     }
 
     /**
@@ -26,8 +22,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        $colocations = auth()->user()->colocations;
-        return view('categories.create', compact('colocations'));
+        return view('category.create');
     }
 
     /**
@@ -36,81 +31,56 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'colocation_id' => 'required|exists:colocations,id',
+            'name' => 'required',
         ]);
-
-        //  user belongs to this colocation
-        $colocation = auth()->user()->colocations()->find($request->colocation_id);
-        if (!$colocation) {
-            return redirect()->back()->with('error', 'Unauthorized colocation.');
-        }
-
         Category::create([
             'name' => $request->name,
             'colocation_id' => $request->colocation_id,
         ]);
-
-        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
+        return redirect()->route('category.index');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Category $category)
+    public function show(string $id)
     {
-        if (!auth()->user()->colocations->contains($category->colocation_id)) {
-            abort(403);
-        }
-
-        return view('categories.show', compact('category'));
+        $category = Category::findOrFail($id);
+        return view('category.show', compact('category'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Category $category)
+    public function edit(string $id)
     {
-        if (!auth()->user()->colocations->contains($category->colocation_id)) {
-            abort(403);
-        }
-
-        $colocations = auth()->user()->colocations;
-        return view('categories.edit', compact('category', 'colocations'));
+        $category = Category::findOrFail($id);
+        return view('category.edit', compact('category'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Category $category)
+    public function update(Request $request, string $id)
     {
-        if (!auth()->user()->colocations->contains($category->colocation_id)) {
-            abort(403);
-        }
-
         $request->validate([
-            'name' => 'required|string|max:255',
-            'colocation_id' => 'required|exists:colocations,id',
+            'name' => 'required',
         ]);
-
+        $category = Category::findOrFail($id);
         $category->update([
             'name' => $request->name,
             'colocation_id' => $request->colocation_id,
         ]);
-
-        return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
+        return redirect()->route('category.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Category $category)
+    public function destroy(string $id)
     {
-        if (!auth()->user()->colocations->contains($category->colocation_id)) {
-            abort(403);
-        }
-
+        $category = Category::findOrFail($id);
         $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+        return redirect()->route('category.index');
     }
 }

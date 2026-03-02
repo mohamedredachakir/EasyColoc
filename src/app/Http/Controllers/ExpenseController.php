@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Expense;
 use App\Models\Category;
-use App\Models\Colocation;
-use App\Models\User;
-use Illuminate\Http\Request;
+
 
 class ExpenseController extends Controller
 {
@@ -15,36 +14,18 @@ class ExpenseController extends Controller
      */
     public function index()
     {
-        // Only expenses from colocations the user belongs to
-        $expenses = Expense::whereIn('colocation_id', auth()->user()->colocations->pluck('id'))
-            ->with(['colocation', 'category', 'payer'])
-            ->latest('expense_date')
-            ->get();
-            
-        return view('expenses.index', compact('expenses'));
+        $expenses = Expense::all();
+        return view('expense.index', compact('expenses'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request)
+    public function create()
     {
-        $user = auth()->user();
-        $colocations = $user->colocations;
-        
-        $selected_colocation_id = $request->query('colocation_id');
-        $categories = collect();
-        $members = collect();
-
-        if ($selected_colocation_id) {
-            $colocation = $colocations->find($selected_colocation_id);
-            if ($colocation) {
-                $categories = $colocation->categories;
-                $members = $colocation->users;
-            }
-        }
-
-        return view('expenses.create', compact('colocations', 'categories', 'members', 'selected_colocation_id'));
+        $categories = Category::all();
+        $colocations = \App\Models\Colocation::whereHas('users', fn($q) => $q->where('user_id', auth()->id()))->get();
+        return view('expense.create', compact('categories', 'colocations'));
     }
 
     /**
@@ -53,104 +34,95 @@ class ExpenseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'expense_date' => 'required|date',
-            'colocation_id' => 'required|exists:colocations,id',
-            'category_id' => 'required|exists:categories,id',
-            'payer_id' => 'required|exists:users,id',
+            'name' => 'required',
+            'colocation_id' => 'required',
+            'category_id' => 'required',
+            'user_id' => 'required',
+            'amount' => 'required',
+            
         ]);
-
-        // user belongs to this colocation
-        $colocation = auth()->user()->colocations()->find($request->colocation_id);
-        if (!$colocation) {
-            return redirect()->back()->with('error', 'Unauthorized colocation.');
-        }
-
-        $expense = Expense::create([
-            'title' => $request->title,
-            'amount' => $request->amount,
-            'expense_date' => $request->expense_date,
+        Expense::create([
+            'name' => $request->name,
             'colocation_id' => $request->colocation_id,
             'category_id' => $request->category_id,
-            'payer_id' => $request->payer_id,
+            'user_id' => $request->user_id,
+            'amount' => $request->amount,
+            'expense_date' => now(),
         ]);
 
-        if(!$expense){return redirect()->back()->with('error', 'Expense not created.');}
+        $rowMembers = \App\Models\ColocationUser::where('colocation_id', $request->colocation_id)->count();
+        $amountPerMember = $request->amount / max($rowMembers, 1);
+        \App\Models\ColocationUser::where('colocation_id', $request->colocation_id)->update([
+            'amount' => \DB::raw("amount - $amountPerMember"),
+        ]);
+        
+        // Crediting the person who paid the full amount
+        \App\Models\ColocationUser::where('colocation_id', $request->colocation_id)
+            ->where('user_id', $request->user_id)
+            ->update([
+                'amount' => \DB::raw("amount + $request->amount"),
+            ]);
 
-        return redirect()->route('expenses.index')->with('success', 'Expense created successfully.');
+        return redirect()->route('expense.index');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Expense $expense)
+    public function show(string $id)
     {
-        // Check if user belongs to the colocation of the expense
-        if (!auth()->user()->colocations->contains($expense->colocation_id)) {
-            abort(403);
-        }
-
-        $expense->load(['colocation', 'category', 'payer']);
-        return view('expenses.show', compact('expense'));
+        $expense = Expense::findOrFail($id);
+        return view('expense.show', compact('expense'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Expense $expense)
+    public function edit(string $id)
     {
-        if (!auth()->user()->colocations->contains($expense->colocation_id)) {
-            abort(403);
+        $expense = Expense::findOrFail($id);
+        if($expense->user_id != auth()->user()->id){
+            return back()->with('error', 'You are not authorized to edit this expense.');
         }
+        $categories = Category::all();
 
-        $colocations = auth()->user()->colocations;
-        $categories = $expense->colocation->categories;
-        $members = $expense->colocation->users;
-
-        return view('expenses.edit', compact('expense', 'colocations', 'categories', 'members'));
+        return view('expense.edit', compact('expense', 'categories'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Expense $expense)
+    public function update(Request $request, string $id)
     {
-        if (!auth()->user()->colocations->contains($expense->colocation_id)) {
-            abort(403);
-        }
-
         $request->validate([
-            'title' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'expense_date' => 'required|date',
-            'category_id' => 'required|exists:categories,id',
-            'payer_id' => 'required|exists:users,id',
+            'name' => 'required',
+            'colocation_id' => 'required',
+            'category_id' => 'required',
+            'user_id' => 'required',
+            'amount' => 'required',
         ]);
-
-        $check = $expense->update([
-            'title' => $request->title,
-            'amount' => $request->amount,
-            'expense_date' => $request->expense_date,
+        $expense = Expense::findOrFail($id);
+        $expense->update([
+            'name' => $request->name,
+            'colocation_id' => $request->colocation_id,
             'category_id' => $request->category_id,
-            'payer_id' => $request->payer_id,
+            'user_id' => $request->user_id,
+            'amount' => $request->amount,
+            'expense_date' => now(),
         ]);
-
-        if(!$check){return redirect()->back()->with('error', 'Expense not updated.');}
-
-        return redirect()->route('expenses.index')->with('success', 'Expense updated successfully.');
+        return redirect()->route('expense.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Expense $expense)
+    public function destroy(string $id)
     {
-        if (!auth()->user()->colocations->contains($expense->colocation_id)) {
-            abort(403);
+        $expense = Expense::findOrFail($id);
+        if($expense->user_id != auth()->user()->id){
+            return back()->with('error', 'You are not authorized to delete this expense.');
         }
-
         $expense->delete();
-        return redirect()->route('expenses.index')->with('success', 'Expense deleted successfully.');
+        return redirect()->route('expense.index');
     }
 }

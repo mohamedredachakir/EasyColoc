@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-
-use App\Models\User;
-use App\Models\Colocation;
-use App\Models\Expense;
-use App\Models\Category;
-use App\Models\Invitation;
 use Illuminate\Http\Request;
-use App\Enums\ColocationStatus;
+use App\Models\Colocation;
+use App\Models\ColocationUser;
+use App\enum\ColocationStatus;
+
 
 class ColocationController extends Controller
 {
@@ -19,8 +16,8 @@ class ColocationController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $colocations = $user->colocations()->with('users', 'expenses', 'categories')->get();
-        return view('colocations.index', compact('colocations'));
+        $colocations = ColocationUser::where('user_id', $user->id)->get();
+        return view('colocation.index', compact('colocations'));
     }
 
     /**
@@ -28,7 +25,13 @@ class ColocationController extends Controller
      */
     public function create()
     {
-        return view('colocations.create');
+        $user = auth()->user();
+        $checkuser = ColocationUser::where('user_id', $user->id)->exists();
+        if($checkuser){
+            return back()->with('error', 'You are already a member of a colocation.');
+        }
+        $colocations = ColocationUser::where('user_id', $user->id)->get();
+        return view('colocation.create', compact('colocations'));
     }
 
     /**
@@ -37,96 +40,100 @@ class ColocationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required',
         ]);
-
-        $colocation = Colocation::create([
+        Colocation::create([
             'name' => $request->name,
-            'owner_id' => auth()->id(),
+            'owner_id' => auth()->user()->id,
             'status' => ColocationStatus::ACTIVE,
         ]);
 
-        if (!$colocation) {
-            return redirect()->back()->with('error', 'Colocation not created.');
-        }
+        ColocationUser::create([
+            'colocation_id' => Colocation::latest()->first()->id,
+            'user_id' => auth()->user()->id,
+            'amount' => 0,
+            'entry_date' => now(),
+            'exit_date' => null,
+        ]);
 
-        // Add the creator as a member too
-        $colocation->users()->attach(auth()->id(), ['joined_at' => now()]);
-
-        return redirect()->route('colocations.index')->with('success', 'Colocation created successfully.');
+        User::where('id', auth()->user()->id)->update([
+            'role' => 'owner',
+        ]);
+        return redirect()->route('colocation.index')->with('success', 'Colocation created successfully!');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Colocation $colocation)
+    public function show(string $id)
     {
-        // Security: Ensure user belongs to this colocation
-        if (!$colocation->users->contains(auth()->id())) {
-            abort(403, 'Unauthorized access to this colocation.');
-        }
-
-        $colocation->load('users', 'expenses.payer', 'categories', 'invitations.receiver');
-
-        $total = $colocation->expenses->sum('amount');
-        $membersCount = $colocation->users->count();
-        $share = $membersCount > 0 ? $total / $membersCount : 0;
-
-        $members = $colocation->users->map(function ($user) use ($colocation, $share) {
-            $totalPaid = $colocation->expenses
-                ->where('payer_id', $user->id)
-                ->sum('amount');
-
-            $user->paid = $totalPaid;
-            $user->balance = $totalPaid - $share;
-
-            return $user;
-        });
-
-        return view('colocations.show', compact('colocation', 'members', 'total', 'share'));
+        $colocation = Colocation::findOrFail($id);
+        return view('colocation.show', compact('colocation'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Colocation $colocation)
+    public function edit(string $id)
     {
-        if ($colocation->owner_id !== auth()->id()) {
-            abort(403, 'Only the owner can edit colocation settings.');
-        }
-        return view('colocations.edit', compact('colocation'));
+        $colocation = Colocation::findOrFail($id);
+        return view('colocation.edit', compact('colocation'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Colocation $colocation)
+    public function update(Request $request, string $id)
     {
-        if ($colocation->owner_id !== auth()->id()) {
-            abort(403);
-        }
-
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required',
         ]);
-
+        $colocation = Colocation::findOrFail($id);
         $colocation->update([
             'name' => $request->name,
         ]);
-
-        return redirect()->route('colocations.index')->with('success', 'Colocation updated successfully.');
+        return redirect()->route('colocation.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Colocation $colocation)
+    public function destroy(string $id)
     {
-        if ($colocation->owner_id !== auth()->id()) {
-            abort(403);
+        $colocation = Colocation::findOrFail($id);
+        $colocation->delete();
+        User::where('id', auth()->user()->id)->update([
+            'role' => 'user',
+        ]);
+        return redirect()->route('colocation.index');
+    }
+
+    public function leave(string $id)
+    {
+        $colocation = Colocation::findOrFail($id);
+        $amount = ColocationUser::where('user_id', auth()->user()->id)->where('colocation_id', $colocation->id)->value('amount');
+
+        if($amount < 0){
+            User::where('id', auth()->user()->id)->update([
+                'reputation' => auth()->user()->reputation - 1,
+            ]);
+            User::where('id', auth()->user()->id)->update([
+                'role' => 'user',
+            ]);
+            ColocationUser::where('user_id', auth()->user()->id)->where('colocation_id', $colocation->id)->delete();
         }
 
-        $colocation->delete();
-        return redirect()->route('colocations.index')->with('success', 'Colocation deleted successfully.');
+        else if($amount > 0){
+            User::where('id', auth()->user()->id)->update([
+                'reputation' => auth()->user()->reputation + 1,
+            ]);
+            User::where('id', auth()->user()->id)->update([
+                'role' => 'user',
+            ]);
+            ColocationUser::where('user_id', auth()->user()->id)->where('colocation_id', $colocation->id)->delete();
+        }
+
+          
+        return redirect()->route('colocation.index');
     }
 }
