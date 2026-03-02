@@ -1,1 +1,1 @@
-# EasyColoc
+# COLOC

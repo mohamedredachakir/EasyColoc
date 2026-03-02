@@ -46,18 +46,18 @@ services:
     depends_on:
       - postgres
 
-  node:
-    image: node:20-alpine
-    container_name: laravel_node
-    working_dir: /var/www/html
-    volumes:
-      - ./src:/var/www/html
-    command: sh -c "npm install && npm run dev -- --host"
-    ports:
-      - "5173:5173"
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
+  # node:
+  #   image: node:20-alpine
+  #   container_name: laravel_node
+  #   working_dir: /var/www/html
+  #   volumes:
+  #     - ./src:/var/www/html
+  #   command: sh -c "npm install && npm run dev -- --host"
+  #   ports:
+  #     - "5173:5173"
+  #   stdin_open: true
+  #   tty: true
+  #   restart: unless-stopped
 
 volumes:
   pgtables:
